@@ -1,5 +1,9 @@
 ###Paul
 
 add file descriptions to README.rmd
+check on using eignvalues from PCOA in TW
+check on how to calculate TW from eigenvalues (pop off largest and redo? or something else requireing rescaling)
+make stab at new TW function
 
 ###JRI
+
