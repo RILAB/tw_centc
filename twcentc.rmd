@@ -1,57 +1,47 @@
-Title
+Tracy Widom on CENTC distance matrix
 ========================================================
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **MD** toolbar button for help on Markdown).
-
-When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-##Functions needed for Tracy Widom
-
-TWres function
+## Require stuff
 ```{r}
-pres<-c()
-for (i in 1:length(TWres_)){
-  TW<-TWres_[i]
-  dif<-abs(test[,1]-TW)
-  p<-test[dif==min(dif),2]
-  pres<-c(pres,p)
-}
-#pres
-res<-list(TWres_,pres)
-return(res)
+require("mclust")
 ```
 
-Mmake function
+## Functions needed for Tracy Widom
+
+### Mmake function
 ```{r}
 Mmake<-function(data){
   pcdat<-data
-	mv<-apply(pcdat,2,mean,na.rm=TRUE)
+  mv<-apply(pcdat,2,mean,na.rm=TRUE)
 	#make vector of sqrt(p*(1-p))
 	vv<-mv/2
 	vv<-sqrt(vv*(1-vv))
 	#redo data and vectors to take out monomophic sites
-	dat<-pcdat[,vv>0&is.na(vv)==FALSE]
-	mv<-mv[vv>0&is.na(vv)==FALSE]
-	vv<-vv[vv>0&is.na(vv)==FALSE]
+	dat<-pcdat[,vv>0&is.na(vv)==FALSE] #don't need either but need something named dat below
+	#mv<-mv[vv>0&is.na(vv)==FALSE] #we don't need?
+	#vv<-vv[vv>0&is.na(vv)==FALSE] #we don't need?
 	M<-t((t(dat)-mv)/vv)
 	M[is.na(M)]<-0
 	return(M)	
 }
 ```
 
+### TWcalc function
 ```{r}
+TWcalc<-function(dat,k){
   x<-dat
 	y<-x%*%t(x)
 	eig<-eigen(y)
 	eig<-eig$values
-	eig<-eig[1:(length(eig))]
-	n<-ncol(x)
+	#eig<-eig[1:(length(eig))]  #Why do this?
+  #n<-ncol(x)  # UNUSED?
 	m0=nrow(x)
-	k=k
+  
+  #I think this is TW residuals
 	TWres_<-c()
 	for (i in 1:k){
 		m=(m0)-i+1
-		m=m
+		#m=m
 		eiv<-eig[i:(m-1)]
 		#n_=n
 		n_=((m+1)*sum(eiv)^2)/((m-1)*sum(eiv^2)-sum(eiv)^2)
@@ -59,7 +49,7 @@ Mmake<-function(data){
 		u_=(sqrt(n_-1)+sqrt(m))^2/n_
 		L1<-(m-1)*eiv[1]/sum(eiv)
 		TW_<-(L1-u_)/S
-		TWres_<-c(TWres_,TW_)
+		TWres_<-c(TWres_,TW_) # why cat these? 
 	}
 	
 	#TWres_
@@ -68,19 +58,55 @@ Mmake<-function(data){
 		TW<-TWres_[i]
 		dif<-abs(test[,1]-TW)
 		p<-test[dif==min(dif),2]
-		pres<-c(pres,p)
+		pres<-c(pres,p)  # why cat these? 
 	}
 	#pres
 	res<-list(TWres_,pres)
 	return(res)
+}
 ```
 
-Read in some test data -- original 218 CENTC from genbank -- and do stuff (WTF?)
+### Do some test data
+
+Read in some test data: JC distance matrix original 218 CENTC from genbank and Tracy-Widom table
 (need to fix this so don't have to specify path)
 ```{r}
 #read in table
 x<-read.csv("~/src/tw_centc/test_matrix.csv",row.names=1,header=T)
 test<-read.table("~/src/tw_centc/twtable.txt", header=FALSE)
-made_x<-Mmake(x)
-TWcalc(made_x,100)```
+```
 
+Standardize matrix and do PC
+```{r}
+made_x<-Mmake(x)
+pc<-prcomp(made_x)  
+```
+
+Do Tracy Widom (figure out this shit later). k is number of PCs to evaluate. Here, trying 150
+```{r}
+TW<-TWcalc(made_x,150) 
+km<-which(TW[[2]]>0.05)[1]
+```
+
+Cluster individuals based on first km significant PCs
+```{r}
+pcx<-Mclust(pc$x[,1:km],G=(km+1)) # originally used VVI model
+mainC<-pcx$classification
+```
+
+Plot stuff (if we can)
+```{r}
+col.regions=rainbow(km+1)
+require(rgl)
+plot3d(pc$x[,1],pc$x[,2],pc$x[,3],xlab="PC1",ylab="PC2",zlab="PC3",col=col.regions[mainC],type="s",radius=0.1) 
+plot(pc$x[,1]~pc$x[,3])
+
+#the below fails w/o column names correctly
+#dim<-1:3
+#text3d(pc$x[,dim],text=rownames(M),col=cols,cex=0.6)
+```
+
+Skree plot
+```{r}
+plot(log(pc$sdev[1:100]^2))
+```
