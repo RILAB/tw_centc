@@ -4,29 +4,31 @@ Tracy Widom on CENTC distance matrix
 ## Require stuff
 ```{r}
 require("mclust")
+require("ape")
+require("RMTstat")
 ```
 
 ## Functions needed for Tracy Widom
 
-### Mmake function
+### Mmake function (only needed for non-distance data)
 ```{r}
 Mmake<-function(data){
   pcdat<-data
   mv<-apply(pcdat,2,mean,na.rm=TRUE)
 	#make vector of sqrt(p*(1-p))
 	vv<-mv/2
-	vv<-sqrt(vv*(1-vv))
+	vv<-sqrt(vv*(1-vv))  # need to use sd of data, not p(1-p)
 	#redo data and vectors to take out monomophic sites
-	dat<-pcdat[,vv>0&is.na(vv)==FALSE] #don't need either but need something named dat below
+	#dat<-pcdat[,vv>0&is.na(vv)==FALSE] #don't need either but need something named dat below
 	#mv<-mv[vv>0&is.na(vv)==FALSE] #we don't need?
 	#vv<-vv[vv>0&is.na(vv)==FALSE] #we don't need?
-	M<-t((t(dat)-mv)/vv)
+	M<-t((t(pcdat)-mv)/vv)
 	M[is.na(M)]<-0
 	return(M)	
 }
 ```
 
-### TWcalc function
+### TWcalc function (SM says ignore, as this is specific for SNP data)
 ```{r}
 TWcalc<-function(dat,k){
   x<-dat
@@ -72,23 +74,34 @@ Read in some test data: JC distance matrix original 218 CENTC from genbank and T
 (need to fix this so don't have to specify path)
 ```{r}
 #read in table
-x<-read.csv("~/src/tw_centc/test_matrix.csv",row.names=1,header=T)
+dist_mat<-read.csv("~/src/tw_centc/test_matrix.csv",row.names=1,header=T)
 test<-read.table("~/src/tw_centc/twtable.txt", header=FALSE)
 ```
 
-Standardize matrix and do PC
+Standardize matrix and do PC <- don't do this for distance matrix, only for individual observations (i.e. SNP data, phenotypes, environments, etc.)
 ```{r}
-made_x<-Mmake(x)
-pc<-prcomp(made_x)  
+made_x<-Mmake(dist_mat)
 ```
 
-Do Tracy Widom (figure out this shit later). k is number of PCs to evaluate. Here, trying 150
+PCOA from ape package. Check to make sure this is giving us eigenvalues 
+```{r}
+#pc<-prcomp(made_x) # for nondistance data  
+pc<-pcoa(dist_mat) # get details on how this works
+```
+
+Skree plot (check to make sure in order)
+```{r}
+plot(pc$values[,1])
+```
+
+Do Tracy Widom. k is number of PCs to evaluate. Here, trying 150.
+This TW is specific for SNP data from Patterson et al. 2006 (according to SM).  Need to redo using TracyWidom distribution from RMTstat package. Check details. 
 ```{r}
 TW<-TWcalc(made_x,150) 
 km<-which(TW[[2]]>0.05)[1]
 ```
 
-Cluster individuals based on first km significant PCs
+Cluster individuals based on first km significant principle coordinates
 ```{r}
 pcx<-Mclust(pc$x[,1:km],G=(km+1)) # originally used VVI model
 mainC<-pcx$classification
@@ -106,7 +119,3 @@ plot(pc$x[,1]~pc$x[,3])
 #text3d(pc$x[,dim],text=rownames(M),col=cols,cex=0.6)
 ```
 
-Skree plot
-```{r}
-plot(log(pc$sdev[1:100]^2))
-```
