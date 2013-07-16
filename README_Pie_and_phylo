@@ -1,0 +1,44 @@
+Chromosome Specificity Pie Charts
+
+THE ORIGINAL DNA DISTANCE MATRIX IS ON FARM, AT ~/centc/Genetic_Distance/B73v2_centc_dnadist
+
+August 28th, 2012
+
+Guidelines of how the across chromosome analyses were performed.
+
+Step 1- Gather the JC distance matrix from PHYLIP
+
+	Data is on the cluster, made with all default parameters.  **dnadist**
+
+Step 2- Make the NJ tree in PHYLIP
+
+	Use the JC distance matrix from phylip to build an outtree with **neighbor**
+	
+Step 3- Generate the Tree
+
+	**neighbor** will generate a file called outtree, use that newick file and figtree to make your tree
+	
+Step 4- Label the groups, extract names.
+
+	Color each of the groups accordingly in figtree
+	Export the colored Figtree as a nexus.  It will have the whole tree in one line with the colors attached to each taxa.
+	Take that wholetree in a line, and make it a separate file, Chr_color_perline.txt for example.
+	To parse the line so that each centc is on its own line, use:
+		perl FigTree_color_parse.pl shortoutput.txt > All_chr_in_tree
+	Take this file, and make the lines that have 2 centc's into 2 lines, should be 5 instances
+		makes the new file, Chr_color_perline.txt
+	Grep out each color:
+		grep "3355444" Chr_color_perline.txt > Color_3355444.txt
+		where the number corresponds to each color
+		you can pinpoint which color is which by just searching for a CentC with a given color, and seeing which clade it pops out by.
+	Do this for all of the colors so they are in their own files.
+	
+Step 5- Count the number of hits from each chromosome.
+
+	grep -c "chr01" Color_*
+	this will show the count of each chr in each of the color files.
+	Manipulate these numbers into a CSV in R.
+	Load the CSV and make the pie charts with R!
+		CentC_PieCharts.R
+		
+Step 6- FinalPies.png
