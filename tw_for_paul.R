@@ -1,3 +1,6 @@
+install.packages('knitr', repos = c('http://rforge.net', 'http://cran.rstudio.org'),
+                 type = 'source')
+
 Mmake<-function(data){
 	pcdat<-data
 	mv<-apply(pcdat,2,mean,na.rm=TRUE)
@@ -53,4 +56,11 @@ x<-read.csv("~/Desktop/Original_centc_DNADIST.csv",row.names=1,header=T)
 test<-read.table("~/Desktop/twtable.txt", header=FALSE)
 made_x<-Mmake(x)
 TWcalc(made_x,100)
+
+
+
+mv = mean vector
+vv = variance vector
+M = standardized vector
+
 

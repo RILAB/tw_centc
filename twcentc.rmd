@@ -8,6 +8,44 @@ require("ape")
 require("RMTstat")
 ```
 
+## New Tracy Widom Plan - PCoA and then TW
+```{r}
+data <- read.csv("Original_centc_DNADIST.csv",row.names=1)
+x <- pcoa(data)
+x$values[,1]
+eigenvalues <- x$values[,1]
+biplot(eigenvalues,plot.axes = c(1,2), dir.axis1=1, dir.axis2=1, rn=NULL,)
+plot(eigenvalues)
+par(mfrow=c(2,2))
+plot(ptw(eigenvalues), main="distribution function")
+plot(dtw(eigenvalues), main="Density")
+plot(qtw(eigenvalues), main="Quantile")
+plot(rtw(eigenvalues), main="Randomly Devious")
+
+
+made_data <- Mmake(data)
+TW<-TWcalc(made_data,150) 
+km<-which(TW[[2]]>0.05)[1]
+
+```
+
+Cluster individuals based on first km significant principle coordinates
+```{r}
+pcx<-Mclust(pc$x[,1:km],G=(km+1)) # originally used VVI model
+mainC<-pcx$classification
+```
+
+Plot stuff (if we can)
+```{r}
+col.regions=rainbow(km+1)
+require(rgl)
+plot3d(pc$x[,1],pc$x[,2],pc$x[,3],xlab="PC1",ylab="PC2",zlab="PC3",col=col.regions[mainC],type="s",radius=0.1) 
+plot(pc$x[,1]~pc$x[,3])
+```
+
+
+## Below Here is Jeff work from before
+
 ## Functions needed for Tracy Widom
 
 ### Mmake function (only needed for non-distance data)
@@ -75,7 +113,7 @@ Read in some test data: JC distance matrix original 218 CENTC from genbank and T
 ```{r}
 #read in table
 dist_mat<-read.csv("~/src/tw_centc/test_matrix.csv",row.names=1,header=T)
-test<-read.table("~/src/tw_centc/twtable.txt", header=FALSE)
+test<-read.table("twtable.txt", header=FALSE)
 ```
 
 Standardize matrix and do PC <- don't do this for distance matrix, only for individual observations (i.e. SNP data, phenotypes, environments, etc.)
